@@ -1,23 +1,19 @@
-﻿using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Text;
-using AuthApiTemplate.Entity;
-using AuthApiTemplate.Helpers;
+﻿using AuthApiTemplate.Entity;
 using AuthApiTemplate.Models;
 using AuthApiTemplate.Services;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.IdentityModel.Tokens;
 
 namespace AuthApiTemplate.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class AuthController(IAuthorizeService authorizeService) : ControllerBase
+    public class AuthController(IAuthorizeService authorizeService,
+        ProducerRabbitService<UserLogin> producerService, AuthApplicationContext context) : ControllerBase
     {
         private readonly IAuthorizeService _authorizeService = authorizeService;
+        private readonly ProducerRabbitService<UserLogin> _producerService = producerService;
+        private readonly AuthApplicationContext _context = context;
 
         [AllowAnonymous]
         [HttpPost("login")]
@@ -56,10 +52,22 @@ namespace AuthApiTemplate.Controllers
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromForm] UserLogin userLogin)
         {
+            if (!ModelState.IsValid) { return BadRequest("Unfull Data"); };
+
             await _authorizeService.Register(userLogin);
+            await _producerService.SendMessageAsync(userLogin);
 
-            if (!ModelState.IsValid) { return BadRequest("Unfull Data"); }
+            return Ok();
+        }
 
+        [HttpPost("check-date")]
+        public IActionResult CheckCreateDate([FromBody] IEnumerable<User> inputUsers)
+        {
+            var dateList = inputUsers.Select(u => u.CreateDate).ToList();
+
+            var matchedUsers = _context.Users
+                .Where(input => dateList.Contains(input.CreateDate))
+                .ToList();
 
             return Ok();
         }

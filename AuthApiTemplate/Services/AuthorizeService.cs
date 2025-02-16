@@ -56,10 +56,10 @@ namespace AuthApiTemplate.Services
                 .Include(u => u.Role)
                 .SingleOrDefaultAsync(u => u.UserName == userLogin.Username || u.Email == userLogin.Username);
 
-            //if (user == null || !BCrypt.Net.BCrypt.Verify(userLogin.Password, user.HashPassword))
-            //{
-            //    return null;
-            //}
+            if (user == null || !BCrypt.Net.BCrypt.Verify(userLogin.Password, user.HashPassword))
+            {
+                return null;
+            }
 
             var refreshToken = _jwtHelper.GenerateRefreshToken();
 

@@ -10,14 +10,19 @@ using AuthApiTemplate.Services;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddDbContext<AuthApplicationContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnectionPC")));
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnectionNote")));
 
 builder.Services.AddScoped<IJwtHelper, JwtHelper>();
 builder.Services.AddScoped<IAuthorizeService, AuthorizeService>();
 
+builder.Services.AddSingleton(new ProducerRabbitService<UserLogin>("localhost", "registration"));
+builder.Services.AddHostedService<ProducerRabbitHostedService<UserLogin>>();
+
 builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("Jwt"));
 
-var jwtSettings = builder.Configuration.GetSection("Jwt").Get<JwtSettings>() ?? throw new NullReferenceException();
+var jwtSettings = builder.Configuration.GetSection("Jwt").Get<JwtSettings>() 
+    ?? throw new NullReferenceException();
+
 var key = Encoding.ASCII.GetBytes(jwtSettings.Key);
 
 builder.Services.AddAuthentication(options =>

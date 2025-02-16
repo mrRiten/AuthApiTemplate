@@ -26,5 +26,7 @@ namespace AuthApiTemplate.Entity
         public string? RefreshToken { get; set; }
 
         public Role? Role { get; set; }
+
+        public DateTime CreateDate { get; set; } = DateTime.Now;
     }
 }
